@@ -1,8 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import Fretboard, { type DisplayMode } from "./Fretboard";
-import { formatInterval, getChord, qualityLabel } from "@/lib/music";
+import ProgressionPlayer from "./ProgressionPlayer";
+import {
+  formatInterval,
+  getChord,
+  qualityLabel,
+  type ChordInfo,
+} from "@/lib/music";
 import { playNote } from "@/lib/sound";
 
 const QUICK_CHORDS = ["D", "A", "G", "Bm", "Em", "C", "Am", "E"];
@@ -16,7 +22,13 @@ const MODES: { id: DisplayMode; label: string }[] = [
 export default function FretboardApp() {
   const [input, setInput] = useState("D");
   const [displayMode, setDisplayMode] = useState<DisplayMode>("both");
-  const chord = useMemo(() => getChord(input), [input]);
+  // aktiv akkord fra progresjonsspilleren — styrer halsen mens den spiller
+  const [activeChord, setActiveChord] = useState<ChordInfo | null>(null);
+  const handleActiveChord = useCallback(
+    (chord: ChordInfo | null) => setActiveChord(chord),
+    [],
+  );
+  const chord = useMemo(() => activeChord ?? getChord(input), [activeChord, input]);
 
   return (
     <div className="flex w-full max-w-5xl flex-col gap-6">
@@ -61,6 +73,9 @@ export default function FretboardApp() {
           </p>
         )}
       </div>
+
+      {/* progresjonsspiller */}
+      <ProgressionPlayer onActiveChordChange={handleActiveChord} />
 
       {/* visningsmodus */}
       <div className="flex items-center gap-2">

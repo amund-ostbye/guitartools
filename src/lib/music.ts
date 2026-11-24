@@ -59,6 +59,23 @@ export function formatInterval(interval: string): string {
   return `${symbols}${num}`;
 }
 
+// Akkordtoner med oktav i lukket posisjon rundt 3. oktav,
+// f.eks. "Bm" -> ["B3", "D4", "F#4"]. Brukes til å spille akkorden.
+export function chordNotesWithOctave(symbol: string): string[] {
+  const chord = Chord.get(symbol);
+  if (chord.empty || chord.notes.length === 0 || !chord.root) return [];
+  const notes: string[] = [];
+  let prevMidi = (Note.midi(`${chord.root}2`) ?? 40) + 11; // like under roten i 3. oktav
+  for (const pc of chord.notes) {
+    let midi = Note.midi(`${pc}3`) ?? 48;
+    while (midi <= prevMidi) midi += 12; // alltid stigende rekkefølge
+    const withOctave = Note.fromMidi(midi);
+    if (withOctave) notes.push(withOctave);
+    prevMidi = midi;
+  }
+  return notes;
+}
+
 // Norsk navn på akkordkvalitet, f.eks. "Major" -> "dur"
 export function qualityLabel(quality: string): string {
   if (quality === "Major") return "dur";

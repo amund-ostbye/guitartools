@@ -6,8 +6,8 @@ export default function Home() {
       <header className="text-center">
         <h1 className="text-3xl font-bold tracking-tight">GuitarTools</h1>
         <p className="mx-auto mt-2 max-w-md text-zinc-600 dark:text-zinc-400">
-          Interaktivt gripebrett — se triaden til en akkord over hele halsen og
-          lær sammenhengen mellom akkorder og toner.
+          Interaktivt gripebrett — se triaden til en akkord over hele halsen,
+          eller spill av en hel akkordprogresjon og følg med i takt.
         </p>
       </header>
       <FretboardApp />
