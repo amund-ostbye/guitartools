@@ -76,6 +76,32 @@ export function chordNotesWithOctave(symbol: string): string[] {
   return notes;
 }
 
+// Full akkord à la gitar: seks "strenger" i mønsteret
+// rot - kvint - rot - ters - kvint - rot, f.eks. "D" -> ["D2","A2","D3","F#3","A3","D4"]
+export function fullChordNotes(symbol: string): string[] {
+  const chord = Chord.get(symbol);
+  if (chord.empty || !chord.tonic) return [];
+  const third = chord.notes.find(
+    (_, i) => Interval.num(chord.intervals[i]) === 3,
+  );
+  const fifth = chord.notes.find(
+    (_, i) => Interval.num(chord.intervals[i]) === 5,
+  );
+  if (!third || !fifth) return chordNotesWithOctave(symbol); // fallback
+  const root = chord.tonic;
+  const pattern = [root, fifth, root, third, fifth, root];
+  const notes: string[] = [];
+  let prevMidi = (Note.midi(`${root}2`) ?? 40) - 1;
+  for (const pc of pattern) {
+    let midi = Note.midi(`${pc}2`) ?? 40;
+    while (midi <= prevMidi) midi += 12;
+    const withOctave = Note.fromMidi(midi);
+    if (withOctave) notes.push(withOctave);
+    prevMidi = midi;
+  }
+  return notes;
+}
+
 // Drone-toner: rot og kvint over 2. oktav, f.eks. "D" -> ["D2", "A2"]
 export function droneNotesFor(symbol: string): string[] {
   const chord = Chord.get(symbol);

@@ -1,4 +1,8 @@
-import { chordNotesWithOctave, droneNotesFor } from "@/lib/music";
+import {
+  chordNotesWithOctave,
+  droneNotesFor,
+  fullChordNotes,
+} from "@/lib/music";
 import type { PolySynth, Synth } from "tone";
 
 let synth: PolySynth<Synth> | null = null;
@@ -44,20 +48,27 @@ export async function playClick(
   clickSynth.triggerAttackRelease(accent ? "G6" : "C6", "32n", time);
 }
 
-// Strummer en akkord: tonene i lukket posisjon, litt forskjøvet i tid.
+// Strummer en akkord litt forskjøvet i tid.
+// voicing "triad" = lukket posisjon rundt 3. oktav, "full" = 6 toner à la gitar.
 export async function playChordStrum(
   symbol: string,
   time?: number,
+  voicing: "triad" | "full" = "triad",
 ): Promise<void> {
   const Tone = await getTone();
-  const notes = chordNotesWithOctave(symbol);
+  const notes =
+    voicing === "full"
+      ? fullChordNotes(symbol)
+      : chordNotesWithOctave(symbol);
   if (notes.length === 0) return;
   const s = getSynth(Tone);
+  const stagger = voicing === "full" ? 0.045 : 0.035;
+  const duration = voicing === "full" ? "2n" : "1n";
   notes.forEach((note, i) => {
     s.triggerAttackRelease(
       note,
-      "1n",
-      time !== undefined ? time + i * 0.035 : undefined,
+      duration,
+      time !== undefined ? time + i * stagger : undefined,
     );
   });
 }

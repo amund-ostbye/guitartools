@@ -7,6 +7,8 @@ import { playChordStrum, playClick, startDrone, stopDrone } from "@/lib/sound";
 const PRESETS = ["D A G Bm", "G C D Em", "Am F C G", "Em C G D"];
 const BEATS_PER_CHORD = 4; // hver akkord varer én takt (4 slag)
 
+type StrumMode = "off" | "triad" | "full";
+
 type Props = {
   // kalles hver takt med den aktive akkorden (null når spilleren er stoppet)
   onActiveChordChange: (chord: ChordInfo | null) => void;
@@ -15,7 +17,7 @@ type Props = {
 export default function ProgressionPlayer({ onActiveChordChange }: Props) {
   const [text, setText] = useState("D A G Bm");
   const [bpm, setBpm] = useState(90);
-  const [strum, setStrum] = useState(true);
+  const [strumMode, setStrumMode] = useState<StrumMode>("triad");
   const [drone, setDrone] = useState(true);
   const [playing, setPlaying] = useState(false);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
@@ -27,18 +29,18 @@ export default function ProgressionPlayer({ onActiveChordChange }: Props) {
 
   // Referanser slik at lyd-effekten ikke starter på nytt ved små endringer
   const bpmRef = useRef(bpm);
-  const strumRef = useRef(strum);
+  const strumRef = useRef(strumMode);
   const droneRef = useRef(drone);
   useEffect(() => {
     bpmRef.current = bpm;
-    strumRef.current = strum;
+    strumRef.current = strumMode;
     droneRef.current = drone;
     if (playing) {
       void import("tone").then((Tone) => {
         Tone.getTransport().bpm.value = bpm;
       });
     }
-  }, [bpm, strum, drone, playing]);
+  }, [bpm, strumMode, drone, playing]);
 
   // Selve avspillingen: Tone.Transport gir presis timing for klikk og strum,
   // Tone.getDraw() synkroniserer React-state (aktiv akkord) med lyden.
@@ -63,7 +65,10 @@ export default function ProgressionPlayer({ onActiveChordChange }: Props) {
             setActiveIndex(index);
             onActiveChordChange(getChord(symbol));
           }, time);
-          if (strumRef.current) void playChordStrum(symbol, time);
+          if (strumRef.current === "triad")
+            void playChordStrum(symbol, time, "triad");
+          else if (strumRef.current === "full")
+            void playChordStrum(symbol, time, "full");
           if (droneRef.current) void startDrone(symbol, time);
         }
         void playClick(barStart, time);
@@ -133,12 +138,16 @@ export default function ProgressionPlayer({ onActiveChordChange }: Props) {
           <span className="w-10 font-mono text-sm">{bpm} BPM</span>
         </label>
         <label className="flex items-center gap-1.5 text-sm">
-          <input
-            type="checkbox"
-            checked={strum}
-            onChange={(e) => setStrum(e.target.checked)}
-          />
-          Strum akkord hver takt
+          Strum hver takt
+          <select
+            value={strumMode}
+            onChange={(e) => setStrumMode(e.target.value as StrumMode)}
+            className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+          >
+            <option value="off">Av</option>
+            <option value="triad">Triade</option>
+            <option value="full">Full akkord</option>
+          </select>
         </label>
         <label className="flex items-center gap-1.5 text-sm">
           <input
