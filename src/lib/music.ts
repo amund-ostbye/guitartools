@@ -1,7 +1,10 @@
 import { Chord, Interval, Note } from "tonal";
 
-// Standard stemming på gitar: index 0 = tykk E (lavest), index 5 = tynn e (høyest)
-export const STRINGS: string[] = ["E2", "B2", "G3", "D3", "A3", "E4"];
+// Standard stemming på gitar, fra tykk E til tynn e:
+// index 0 = E2 (lavest), index 5 = E4 (tynn e, høyest)
+export const STRINGS: string[] = ["E2", "A2", "D3", "G3", "B3", "E4"];
+// Tykkelse per streng i samme rekkefølge (tykk E = bredest)
+export const STRING_THICKNESS: number[] = [6, 5, 4, 3, 2, 1];
 export const FRET_COUNT = 15;
 
 export type ChordInfo = {

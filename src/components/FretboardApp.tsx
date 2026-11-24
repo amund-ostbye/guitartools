@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 import Fretboard, { type DisplayMode } from "./Fretboard";
 import ProgressionPlayer from "./ProgressionPlayer";
 import {
+  colorForInterval,
   formatInterval,
   getChord,
   qualityLabel,
@@ -59,15 +60,7 @@ export default function FretboardApp() {
             </button>
           ))}
         </div>
-        {chord ? (
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">
-            <span className="font-semibold text-zinc-900 dark:text-zinc-50">
-              {chord.symbol} {qualityLabel(chord.quality)}
-            </span>{" "}
-            — tonene {chord.notes.join(" – ")} (
-            {chord.intervals.map(formatInterval).join(", ")})
-          </p>
-        ) : (
+        {!chord && (
           <p className="text-sm text-red-600 dark:text-red-400">
             Fant ikke akkorden «{input}» — prøv f.eks. D, Bm eller F#maj7.
           </p>
@@ -96,6 +89,32 @@ export default function FretboardApp() {
           ))}
         </div>
       </div>
+
+      {/* gjeldende akkord, stor og tydelig */}
+      {chord && (
+        <div className="flex flex-col items-center gap-1">
+          <span className="text-6xl font-bold tracking-tight">
+            {chord.symbol}
+          </span>
+          <span className="text-sm text-zinc-500 dark:text-zinc-400">
+            {qualityLabel(chord.quality)}
+          </span>
+          <div className="mt-1 flex flex-wrap justify-center gap-x-4 gap-y-1">
+            {chord.notes.map((note, i) => (
+              <span
+                key={note}
+                className="inline-flex items-center gap-1.5 text-sm"
+              >
+                <span
+                  className="inline-block h-3 w-3 rounded-full"
+                  style={{ backgroundColor: colorForInterval(chord.intervals[i]) }}
+                />
+                {note} · {formatInterval(chord.intervals[i])}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* gripebrettet */}
       <Fretboard

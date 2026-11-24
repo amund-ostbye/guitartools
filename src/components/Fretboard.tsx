@@ -3,6 +3,7 @@
 import {
   FRET_COUNT,
   STRINGS,
+  STRING_THICKNESS,
   colorForInterval,
   formatInterval,
   intervalInChord,
@@ -26,6 +27,9 @@ const HEIGHT = TOP + (STRINGS.length - 1) * STRING_DY + BOTTOM;
 
 const INLAY_FRETS = new Set([3, 5, 7, 9, 15]);
 const DOUBLE_INLAY_FRET = 12;
+
+// Visningsrekkefølge på halsen: tynn e (høyest) øverst, tykk E nederst
+const DISPLAY_ORDER = STRINGS.map((_, i) => STRINGS.length - 1 - i);
 
 function fretX(fret: number): number {
   return LEFT + fret * FRET_W;
@@ -99,15 +103,15 @@ export default function Fretboard({ chord, displayMode, onNoteClick }: Props) {
         />
       ))}
 
-      {/* strenger (horisontale linjer) — tykk E øverst */}
-      {STRINGS.map((_, stringIndex) => (
+      {/* strenger (horisontale linjer) — visningsrekkefølge: tynn e øverst */}
+      {DISPLAY_ORDER.map((stringIndex, row) => (
         <line
           key={stringIndex}
           x1={fretX(0)}
-          y1={stringY(stringIndex)}
+          y1={stringY(row)}
           x2={fretX(FRET_COUNT)}
-          y2={stringY(stringIndex)}
-          strokeWidth={6 - stringIndex} // tykkere strenger øverst
+          y2={stringY(row)}
+          strokeWidth={STRING_THICKNESS[stringIndex]}
           className="stroke-zinc-500 dark:stroke-zinc-400"
         />
       ))}
@@ -125,14 +129,14 @@ export default function Fretboard({ chord, displayMode, onNoteClick }: Props) {
         </text>
       ))}
 
-      {/* noter på alle strenger/bånd */}
-      {STRINGS.map((_, stringIndex) =>
+      {/* noter på alle strenger/bånd — tynn e øverst */}
+      {DISPLAY_ORDER.map((stringIndex, row) =>
         Array.from({ length: FRET_COUNT + 1 }, (_, fret) => {
           const note = noteAt(stringIndex, fret);
           const interval = chord ? intervalInChord(chord, note) : null;
           const pc = pitchClassOf(note);
           const cx = noteX(fret);
-          const cy = stringY(stringIndex);
+          const cy = stringY(row);
 
           if (!interval) {
             // vanlig tone — liten, anonym prikk
