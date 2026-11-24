@@ -38,6 +38,7 @@ type Props = {
 export default function ProgressionPlayer({ onActiveChordChange }: Props) {
   const [text, setText] = useState("D A G Bm");
   const [bpm, setBpm] = useState(90);
+  const [click, setClick] = useState(true);
   const [strumMode, setStrumMode] = useState<StrumMode>("triad");
   const [drone, setDrone] = useState(true);
   const [sustainMode, setSustainMode] = useState<SustainMode>("off");
@@ -51,11 +52,13 @@ export default function ProgressionPlayer({ onActiveChordChange }: Props) {
 
   // Referanser slik at lyd-effekten ikke starter på nytt ved små endringer
   const bpmRef = useRef(bpm);
+  const clickRef = useRef(click);
   const strumRef = useRef(strumMode);
   const droneRef = useRef(drone);
   const sustainRef = useRef(sustainMode);
   useEffect(() => {
     bpmRef.current = bpm;
+    clickRef.current = click;
     strumRef.current = strumMode;
     droneRef.current = drone;
     sustainRef.current = sustainMode;
@@ -65,7 +68,7 @@ export default function ProgressionPlayer({ onActiveChordChange }: Props) {
         Tone.getTransport().bpm.value = bpm;
       });
     }
-  }, [bpm, strumMode, drone, sustainMode, playing]);
+  }, [bpm, click, strumMode, drone, sustainMode, playing]);
 
   // Selve avspillingen: Tone.Transport gir presis timing for klikk og strum,
   // Tone.getDraw() synkroniserer React-state (aktiv akkord) med lyden.
@@ -97,7 +100,7 @@ export default function ProgressionPlayer({ onActiveChordChange }: Props) {
           const padNotes = padNotesFor(symbol, droneRef.current, sustainRef.current);
           if (padNotes.length > 0) void startPad(padNotes, time);
         }
-        void playClick(barStart, time);
+        if (clickRef.current) void playClick(barStart, time);
         beat += 1;
       }, "4n");
       transport.start(0);
@@ -162,6 +165,14 @@ export default function ProgressionPlayer({ onActiveChordChange }: Props) {
             className="w-32"
           />
           <span className="w-10 font-mono text-sm">{bpm} BPM</span>
+        </label>
+        <label className="flex items-center gap-1.5 text-sm">
+          <input
+            type="checkbox"
+            checked={click}
+            onChange={(e) => setClick(e.target.checked)}
+          />
+          Klikk (metronom)
         </label>
         <label className="flex items-center gap-1.5 text-sm">
           Strum hver takt
