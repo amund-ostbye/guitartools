@@ -80,6 +80,7 @@ export default function FretboardApp() {
       <TabFetcher
         onChordSelect={setInput}
         onUseProgression={(seq) => setProgressionText(seq.join(" "))}
+        activeSymbol={chord?.symbol ?? null}
       />
 
       {/* visningsmodus */}
