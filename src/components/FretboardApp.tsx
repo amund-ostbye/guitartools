@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import Fretboard, { type DisplayMode } from "./Fretboard";
 import ProgressionPlayer from "./ProgressionPlayer";
+import TabFetcher from "./TabFetcher";
 import {
   colorForInterval,
   formatInterval,
@@ -22,6 +23,7 @@ const MODES: { id: DisplayMode; label: string }[] = [
 
 export default function FretboardApp() {
   const [input, setInput] = useState("D");
+  const [progressionText, setProgressionText] = useState("D A G Bm");
   const [displayMode, setDisplayMode] = useState<DisplayMode>("both");
   // aktiv akkord fra progresjonsspilleren — styrer halsen mens den spiller
   const [activeChord, setActiveChord] = useState<ChordInfo | null>(null);
@@ -68,7 +70,17 @@ export default function FretboardApp() {
       </div>
 
       {/* progresjonsspiller */}
-      <ProgressionPlayer onActiveChordChange={handleActiveChord} />
+      <ProgressionPlayer
+        onActiveChordChange={handleActiveChord}
+        progressionText={progressionText}
+        onProgressionTextChange={setProgressionText}
+      />
+
+      {/* hent akkorder fra ultimate guitar */}
+      <TabFetcher
+        onChordSelect={setInput}
+        onUseProgression={(seq) => setProgressionText(seq.join(" "))}
+      />
 
       {/* visningsmodus */}
       <div className="flex items-center gap-2">

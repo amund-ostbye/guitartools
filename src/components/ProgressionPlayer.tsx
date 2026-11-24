@@ -33,10 +33,15 @@ function padNotesFor(
 type Props = {
   // kalles hver takt med den aktive akkorden (null når spilleren er stoppet)
   onActiveChordChange: (chord: ChordInfo | null) => void;
+  progressionText: string;
+  onProgressionTextChange: (text: string) => void;
 };
 
-export default function ProgressionPlayer({ onActiveChordChange }: Props) {
-  const [text, setText] = useState("D A G Bm");
+export default function ProgressionPlayer({
+  onActiveChordChange,
+  progressionText,
+  onProgressionTextChange,
+}: Props) {
   const [bpm, setBpm] = useState(90);
   const [click, setClick] = useState(true);
   const [strumMode, setStrumMode] = useState<StrumMode>("triad");
@@ -46,8 +51,8 @@ export default function ProgressionPlayer({ onActiveChordChange }: Props) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
   const progression = useMemo(
-    () => text.trim().split(/[\s,\-|]+/).filter(Boolean),
-    [text],
+    () => progressionText.trim().split(/[\s,\-|]+/).filter(Boolean),
+    [progressionText],
   );
 
   // Referanser slik at lyd-effekten ikke starter på nytt ved små endringer
@@ -130,15 +135,15 @@ export default function ProgressionPlayer({ onActiveChordChange }: Props) {
         </label>
         <input
           id="progression-input"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
+          value={progressionText}
+          onChange={(e) => onProgressionTextChange(e.target.value)}
           placeholder="f.eks. D A G Bm"
           className="w-52 rounded-lg border border-zinc-300 bg-white px-3 py-2 font-mono text-sm outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-900"
         />
         {PRESETS.map((preset) => (
           <button
             key={preset}
-            onClick={() => setText(preset)}
+            onClick={() => onProgressionTextChange(preset)}
             className="rounded-lg border border-zinc-300 bg-white px-2.5 py-1.5 font-mono text-xs transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
           >
             {preset}
