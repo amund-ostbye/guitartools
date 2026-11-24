@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getChord, type ChordInfo } from "@/lib/music";
-import { playChordStrum, playClick } from "@/lib/sound";
+import { playChordStrum, playClick, startDrone, stopDrone } from "@/lib/sound";
 
 const PRESETS = ["D A G Bm", "G C D Em", "Am F C G", "Em C G D"];
 const BEATS_PER_CHORD = 4; // hver akkord varer én takt (4 slag)
@@ -16,6 +16,7 @@ export default function ProgressionPlayer({ onActiveChordChange }: Props) {
   const [text, setText] = useState("D A G Bm");
   const [bpm, setBpm] = useState(90);
   const [strum, setStrum] = useState(true);
+  const [drone, setDrone] = useState(true);
   const [playing, setPlaying] = useState(false);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
@@ -27,15 +28,17 @@ export default function ProgressionPlayer({ onActiveChordChange }: Props) {
   // Referanser slik at lyd-effekten ikke starter på nytt ved små endringer
   const bpmRef = useRef(bpm);
   const strumRef = useRef(strum);
+  const droneRef = useRef(drone);
   useEffect(() => {
     bpmRef.current = bpm;
     strumRef.current = strum;
+    droneRef.current = drone;
     if (playing) {
       void import("tone").then((Tone) => {
         Tone.getTransport().bpm.value = bpm;
       });
     }
-  }, [bpm, strum, playing]);
+  }, [bpm, strum, drone, playing]);
 
   // Selve avspillingen: Tone.Transport gir presis timing for klikk og strum,
   // Tone.getDraw() synkroniserer React-state (aktiv akkord) med lyden.
@@ -61,6 +64,7 @@ export default function ProgressionPlayer({ onActiveChordChange }: Props) {
             onActiveChordChange(getChord(symbol));
           }, time);
           if (strumRef.current) void playChordStrum(symbol, time);
+          if (droneRef.current) void startDrone(symbol, time);
         }
         void playClick(barStart, time);
         beat += 1;
@@ -78,6 +82,7 @@ export default function ProgressionPlayer({ onActiveChordChange }: Props) {
         Tone.getTransport().stop();
         Tone.getTransport().cancel(0);
       });
+      void stopDrone();
     };
   }, [playing, progression, onActiveChordChange]);
 
@@ -134,6 +139,14 @@ export default function ProgressionPlayer({ onActiveChordChange }: Props) {
             onChange={(e) => setStrum(e.target.checked)}
           />
           Strum akkord hver takt
+        </label>
+        <label className="flex items-center gap-1.5 text-sm">
+          <input
+            type="checkbox"
+            checked={drone}
+            onChange={(e) => setDrone(e.target.checked)}
+          />
+          Dronelyd (rot + kvint)
         </label>
       </div>
 

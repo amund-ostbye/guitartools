@@ -1,4 +1,4 @@
-import { chordNotesWithOctave } from "@/lib/music";
+import { chordNotesWithOctave, droneNotesFor } from "@/lib/music";
 import type { PolySynth, Synth } from "tone";
 
 let synth: PolySynth<Synth> | null = null;
@@ -60,4 +60,36 @@ export async function playChordStrum(
       time !== undefined ? time + i * 0.035 : undefined,
     );
   });
+}
+
+// --- Drone ---
+// Holder rot + kvint av den aktive akkorden som en vedvarende tone.
+let drone: { synth: PolySynth<Synth>; notes: string[] } | null = null;
+
+// Starter drone for en akkord; slipper samtidig forrige drone på samme tidspunkt.
+export async function startDrone(symbol: string, time?: number): Promise<void> {
+  const Tone = await getTone();
+  if (!drone) {
+    const synth = new Tone.PolySynth(Tone.Synth, {
+      oscillator: { type: "sawtooth" },
+      envelope: { attack: 0.5, decay: 0, sustain: 1, release: 1.5 },
+    });
+    synth.volume.value = -16;
+    const filter = new Tone.Filter(900, "lowpass"); // mykner lyden
+    synth.chain(filter, Tone.getDestination());
+    drone = { synth, notes: [] };
+  }
+  const notes = droneNotesFor(symbol);
+  if (notes.length === 0) return;
+  drone.synth.triggerRelease(drone.notes, time);
+  drone.synth.triggerAttack(notes, time);
+  drone.notes = notes;
+}
+
+// Stopper dronen (f.eks. når progresjonen stoppes).
+export async function stopDrone(time?: number): Promise<void> {
+  if (!drone || drone.notes.length === 0) return;
+  await getTone(); // sikrer at Tone er initialisert
+  drone.synth.triggerRelease(drone.notes, time);
+  drone.notes = [];
 }

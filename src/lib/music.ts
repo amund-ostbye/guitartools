@@ -76,6 +76,18 @@ export function chordNotesWithOctave(symbol: string): string[] {
   return notes;
 }
 
+// Drone-toner: rot og kvint over 2. oktav, f.eks. "D" -> ["D2", "A2"]
+export function droneNotesFor(symbol: string): string[] {
+  const chord = Chord.get(symbol);
+  if (chord.empty || !chord.root) return [];
+  const rootMidi = Note.midi(`${chord.root}2`);
+  if (rootMidi === null) return [];
+  const fifthMidi = rootMidi + 7; // ren kvint over rot
+  return [Note.fromMidi(rootMidi), Note.fromMidi(fifthMidi)].filter(
+    (n): n is string => n !== null,
+  );
+}
+
 // Norsk navn på akkordkvalitet, f.eks. "Major" -> "dur"
 export function qualityLabel(quality: string): string {
   if (quality === "Major") return "dur";
