@@ -17,8 +17,8 @@ export function getChord(input: string): ChordInfo | null {
   const chord = Chord.get(input.trim());
   if (chord.empty || chord.notes.length === 0) return null;
   return {
-    symbol: chord.name || input.trim(),
-    root: chord.root ?? "",
+    symbol: chord.symbol || input.trim(),
+    root: chord.tonic ?? "",
     notes: chord.notes,
     intervals: chord.intervals,
     quality: chord.quality ?? "",
@@ -63,9 +63,9 @@ export function formatInterval(interval: string): string {
 // f.eks. "Bm" -> ["B3", "D4", "F#4"]. Brukes til å spille akkorden.
 export function chordNotesWithOctave(symbol: string): string[] {
   const chord = Chord.get(symbol);
-  if (chord.empty || chord.notes.length === 0 || !chord.root) return [];
+  if (chord.empty || chord.notes.length === 0 || !chord.tonic) return [];
   const notes: string[] = [];
-  let prevMidi = (Note.midi(`${chord.root}2`) ?? 40) + 11; // like under roten i 3. oktav
+  let prevMidi = (Note.midi(`${chord.tonic}2`) ?? 40) + 11; // like under roten i 3. oktav
   for (const pc of chord.notes) {
     let midi = Note.midi(`${pc}3`) ?? 48;
     while (midi <= prevMidi) midi += 12; // alltid stigende rekkefølge
@@ -79,8 +79,8 @@ export function chordNotesWithOctave(symbol: string): string[] {
 // Drone-toner: rot og kvint over 2. oktav, f.eks. "D" -> ["D2", "A2"]
 export function droneNotesFor(symbol: string): string[] {
   const chord = Chord.get(symbol);
-  if (chord.empty || !chord.root) return [];
-  const rootMidi = Note.midi(`${chord.root}2`);
+  if (chord.empty || !chord.tonic) return [];
+  const rootMidi = Note.midi(`${chord.tonic}2`);
   if (rootMidi === null) return [];
   const fifthMidi = rootMidi + 7; // ren kvint over rot
   return [Note.fromMidi(rootMidi), Note.fromMidi(fifthMidi)].filter(
