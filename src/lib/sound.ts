@@ -1,8 +1,4 @@
-import {
-  chordNotesWithOctave,
-  droneNotesFor,
-  fullChordNotes,
-} from "@/lib/music";
+import { chordNotesWithOctave, fullChordNotes } from "@/lib/music";
 import type { PolySynth, Synth } from "tone";
 
 let synth: PolySynth<Synth> | null = null;
@@ -73,14 +69,11 @@ export async function playChordStrum(
   });
 }
 
-// --- Drone ---
-// Holder rot + kvint av den aktive akkorden som en vedvarende tone.
-let drone: { synth: PolySynth<Synth>; notes: string[] } | null = null;
+// --- Vedvarende bakgrunnslyd (drone / akkord med sustain) ---
+let pad: { synth: PolySynth<Synth>; notes: string[] } | null = null;
 
-// Starter drone for en akkord; slipper samtidig forrige drone på samme tidspunkt.
-export async function startDrone(symbol: string, time?: number): Promise<void> {
-  const Tone = await getTone();
-  if (!drone) {
+async function getPad(Tone: typeof import("tone")) {
+  if (!pad) {
     const synth = new Tone.PolySynth(Tone.Synth, {
       oscillator: { type: "sawtooth" },
       envelope: { attack: 0.5, decay: 0, sustain: 1, release: 1.5 },
@@ -88,19 +81,31 @@ export async function startDrone(symbol: string, time?: number): Promise<void> {
     synth.volume.value = -16;
     const filter = new Tone.Filter(900, "lowpass"); // mykner lyden
     synth.chain(filter, Tone.getDestination());
-    drone = { synth, notes: [] };
+    pad = { synth, notes: [] };
   }
-  const notes = droneNotesFor(symbol);
-  if (notes.length === 0) return;
-  drone.synth.triggerRelease(drone.notes, time);
-  drone.synth.triggerAttack(notes, time);
-  drone.notes = notes;
+  return pad;
 }
 
-// Stopper dronen (f.eks. når progresjonen stoppes).
-export async function stopDrone(time?: number): Promise<void> {
-  if (!drone || drone.notes.length === 0) return;
+// Holder en liste toner som vedvarende lyd; slipper forrige på samme tidspunkt.
+async function sustainNotes(notes: string[], time?: number): Promise<void> {
+  if (notes.length === 0) return;
+  const Tone = await getTone();
+  const p = await getPad(Tone);
+  p.synth.triggerRelease(p.notes, time);
+  p.synth.triggerAttack(notes, time);
+  p.notes = notes;
+}
+
+// Starter en vedvarende bakgrunnslyd med gitte toner
+// (f.eks. drone = rot+kvint, og/eller hele akkorden med sustain).
+export async function startPad(notes: string[], time?: number): Promise<void> {
+  await sustainNotes(notes, time);
+}
+
+// Stopper bakgrunnslyden (f.eks. når progresjonen stoppes).
+export async function stopPad(time?: number): Promise<void> {
+  if (!pad || pad.notes.length === 0) return;
   await getTone(); // sikrer at Tone er initialisert
-  drone.synth.triggerRelease(drone.notes, time);
-  drone.notes = [];
+  pad.synth.triggerRelease(pad.notes, time);
+  pad.notes = [];
 }

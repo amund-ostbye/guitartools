@@ -1,13 +1,34 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { getChord, type ChordInfo } from "@/lib/music";
-import { playChordStrum, playClick, startDrone, stopDrone } from "@/lib/sound";
+import {
+  chordNotesWithOctave,
+  droneNotesFor,
+  fullChordNotes,
+  getChord,
+  type ChordInfo,
+} from "@/lib/music";
+import { playChordStrum, playClick, startPad, stopPad } from "@/lib/sound";
 
 const PRESETS = ["D A G Bm", "G C D Em", "Am F C G", "Em C G D"];
 const BEATS_PER_CHORD = 4; // hver akkord varer én takt (4 slag)
 
 type StrumMode = "off" | "triad" | "full";
+type SustainMode = "off" | "triad" | "full";
+
+// Bakgrunnstoner for en akkord: drone (rot+kvint) og/eller hele akkorden med sustain
+function padNotesFor(
+  symbol: string,
+  drone: boolean,
+  sustain: SustainMode,
+): string[] {
+  const notes = new Set<string>();
+  if (drone) droneNotesFor(symbol).forEach((n) => notes.add(n));
+  if (sustain === "triad")
+    chordNotesWithOctave(symbol).forEach((n) => notes.add(n));
+  if (sustain === "full") fullChordNotes(symbol).forEach((n) => notes.add(n));
+  return [...notes];
+}
 
 type Props = {
   // kalles hver takt med den aktive akkorden (null når spilleren er stoppet)
@@ -19,6 +40,7 @@ export default function ProgressionPlayer({ onActiveChordChange }: Props) {
   const [bpm, setBpm] = useState(90);
   const [strumMode, setStrumMode] = useState<StrumMode>("triad");
   const [drone, setDrone] = useState(true);
+  const [sustainMode, setSustainMode] = useState<SustainMode>("off");
   const [playing, setPlaying] = useState(false);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
@@ -31,16 +53,19 @@ export default function ProgressionPlayer({ onActiveChordChange }: Props) {
   const bpmRef = useRef(bpm);
   const strumRef = useRef(strumMode);
   const droneRef = useRef(drone);
+  const sustainRef = useRef(sustainMode);
   useEffect(() => {
     bpmRef.current = bpm;
     strumRef.current = strumMode;
     droneRef.current = drone;
+    sustainRef.current = sustainMode;
+    if (!drone && sustainMode === "off" && playing) void stopPad(); // skru av med én gang
     if (playing) {
       void import("tone").then((Tone) => {
         Tone.getTransport().bpm.value = bpm;
       });
     }
-  }, [bpm, strumMode, drone, playing]);
+  }, [bpm, strumMode, drone, sustainMode, playing]);
 
   // Selve avspillingen: Tone.Transport gir presis timing for klikk og strum,
   // Tone.getDraw() synkroniserer React-state (aktiv akkord) med lyden.
@@ -69,7 +94,8 @@ export default function ProgressionPlayer({ onActiveChordChange }: Props) {
             void playChordStrum(symbol, time, "triad");
           else if (strumRef.current === "full")
             void playChordStrum(symbol, time, "full");
-          if (droneRef.current) void startDrone(symbol, time);
+          const padNotes = padNotesFor(symbol, droneRef.current, sustainRef.current);
+          if (padNotes.length > 0) void startPad(padNotes, time);
         }
         void playClick(barStart, time);
         beat += 1;
@@ -87,7 +113,7 @@ export default function ProgressionPlayer({ onActiveChordChange }: Props) {
         Tone.getTransport().stop();
         Tone.getTransport().cancel(0);
       });
-      void stopDrone();
+      void stopPad();
     };
   }, [playing, progression, onActiveChordChange]);
 
@@ -156,6 +182,18 @@ export default function ProgressionPlayer({ onActiveChordChange }: Props) {
             onChange={(e) => setDrone(e.target.checked)}
           />
           Dronelyd (rot + kvint)
+        </label>
+        <label className="flex items-center gap-1.5 text-sm">
+          Sustain
+          <select
+            value={sustainMode}
+            onChange={(e) => setSustainMode(e.target.value as SustainMode)}
+            className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+          >
+            <option value="off">Av</option>
+            <option value="triad">Triade</option>
+            <option value="full">Full akkord</option>
+          </select>
         </label>
       </div>
 
